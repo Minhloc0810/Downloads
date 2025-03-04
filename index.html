@@ -1,102 +1,73 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Download</title>
-    <style>
-        body {
-            margin: 0; 
-            padding: 0;
-            background-image: url("bg2.jpg");
-            background-size: cover; 
-            background-position: center; 
-            background-repeat: no-repeat; 
-            height: 100vh; 
-            width: 100vw; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-        }
-        .form {
-            width: 90%;
-            max-width: 400px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            padding: 20px;
-            text-align: center;
-        }
-        input[type="text"] {
-            width: calc(100% - 20px);
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin: 10px 0 20px;
-        }
-        .button-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .social-button, button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
-            border-radius: 8px;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            background: linear-gradient(45deg, #8e2de2, #4a00e0);
-            transition: all 0.3s ease;
-        }
-        .social-button:hover, button:hover {
-            background: linear-gradient(45deg, #4a00e0, #8e2de2);
-            transform: scale(1.05);
-        }
-        button {
-            width: 100%;
-            font-size: 18px;
-            font-weight: bold;
-            padding: 14px;
-        }
-    </style>
+    <title>TikTok Video Downloader</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <div class="form">
-        <form id="downloadForm" action="Information_Video.php" method="get" >
-            <input type="text" name="url" id="url" placeholder="Anh điền link video vào đây hoặc ấn vào Dán link...">
-            <button type="button" onclick="pasteLink()">Dán link</button>
-        </form>
-        <h2>Anh tải video từ nền tảng nào thì chọn vào nền tảng đấy.</h2>
-        <div class="button-container">
-            <button class="social-button">Facebook</button>
-            <button class="social-button">Video YouTube</button>
-            <button class="social-button">Mp3 YouTube</button>
-            <button onclick="download_Video_Tiktok()" class="social-button">TikTok</button>
-        </div>
-    </div>
-    
+    <h2>TikTok Video Downloader</h2>
+    <input type="text" id="tiktokUrl" placeholder="Enter TikTok Video URL" style="width: 80%; padding: 5px;">
+    <button onclick="getVideoInfo()">Get Video Info</button>
+    <div id="videoInfo" style="margin-top: 20px;"></div>
+
     <script>
-        function pasteLink() {
-            navigator.clipboard.readText().then(text => {
-                document.getElementById('url').value = text;
-            }).catch(err => {
-                console.error('Lỗi khi dán link:', err);
+        function getVideoInfo() {
+            let videoUrl = document.getElementById("tiktokUrl").value;
+            if (!videoUrl) {
+                alert("Please enter a TikTok video URL");
+                return;
+            }
+
+            const settings = {
+                async: true,
+                crossDomain: true,
+                url: 'https://tiktok-video-no-watermark2.p.rapidapi.com/',
+                method: 'POST',
+                headers: {
+                    'x-rapidapi-key': '23440d752fmsh0bce66bf6c5a2c0p1486cfjsn35a15b05da7d',
+                    'x-rapidapi-host': 'tiktok-video-no-watermark2.p.rapidapi.com',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                data: {
+                    url: videoUrl,
+                    hd: '1'
+                }
+            };
+
+            $.ajax(settings).done(function (response) {
+                if (response && response.data) {
+                    let video = response.data;
+                    let videoHtml = `
+                        <h3>${video.title || "TikTok Video"}</h3>
+                        <img src="${video.cover}" alt="Video Thumbnail" style="width:300px; display:block; margin-bottom:10px;">
+                        <br>
+                        <button onclick="downloadVideo('${video.play}')">Download Video</button>
+                    `;
+                    document.getElementById("videoInfo").innerHTML = videoHtml;
+                } else {
+                    alert("Failed to fetch video info. Please try again.");
+                }
+            }).fail(function () {
+                alert("Error fetching data. Check API key or try again later.");
             });
         }
-        function download_Video_Tiktok() {
-            var url = document.getElementById('url').value;
-            if(url==""){
-                alert("Vui lòng nhập link video");
-            }else{
-                document.getElementById('downloadForm').submit();
+
+        async function downloadVideo(videoUrl) {
+            try {
+                const response = await fetch(videoUrl);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'tiktok_video.mp4';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                alert("Error downloading video. Please try again.");
             }
         }
     </script>
