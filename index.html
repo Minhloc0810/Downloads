@@ -3,72 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Video Downloader</title>
+    <title>Download YouTube Video</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <h2>TikTok Video Downloader</h2>
-    <input type="text" id="tiktokUrl" placeholder="Enter TikTok Video URL" style="width: 80%; padding: 5px;">
-    <button onclick="getVideoInfo()">Get Video Info</button>
-    <div id="videoInfo" style="margin-top: 20px;"></div>
+    <h2>YouTube Video Downloader</h2>
+    <input type="text" id="Url" placeholder="Nhập link YouTube" style="width: 80%;" />
+    <button onclick="getVideoInfo()">Lấy thông tin</button>
+    
+    <div id="Information" style="margin-top: 20px;"></div>
 
     <script>
         function getVideoInfo() {
-            let videoUrl = document.getElementById("tiktokUrl").value;
+            let videoUrl = document.getElementById("Url").value.trim();
             if (!videoUrl) {
-                alert("Please enter a TikTok video URL");
+                alert("Vui lòng nhập link video facebook!");
                 return;
             }
 
             const settings = {
                 async: true,
                 crossDomain: true,
-                url: 'https://tiktok-video-no-watermark2.p.rapidapi.com/',
+                url: 'https://facebook17.p.rapidapi.com/api/facebook/links',
                 method: 'POST',
                 headers: {
                     'x-rapidapi-key': '23440d752fmsh0bce66bf6c5a2c0p1486cfjsn35a15b05da7d',
-                    'x-rapidapi-host': 'tiktok-video-no-watermark2.p.rapidapi.com',
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    'x-rapidapi-host': 'facebook17.p.rapidapi.com',
+                    'Content-Type': 'application/json'
                 },
-                data: {
-                    url: videoUrl,
-                    hd: '1'
-                }
+                processData: false,
+                data: JSON.stringify({ url: videoUrl })
             };
 
             $.ajax(settings).done(function (response) {
-                if (response && response.data) {
-                    let video = response.data;
+                if (response && response.length > 0) { // Kiểm tra xem response có dữ liệu không
+                    let data = response[0]; // Lấy phần tử đầu tiên trong mảng
+
                     let videoHtml = `
-                        <h3>${video.title || "TikTok Video"}</h3>
-                        <img src="${video.cover}" alt="Video Thumbnail" style="width:300px; display:block; margin-bottom:10px;">
-                        <br>
-                        <button onclick="downloadVideo('${video.play}')">Download Video</button>
+                        <h3>Resource ID: ${data.resourceId}</h3>
+                        <img src="${data.pictureUrl}" alt="Video Thumbnail" style="width:300px; display:block; margin-bottom:10px;">
                     `;
-                    document.getElementById("videoInfo").innerHTML = videoHtml;
+
+                    if (data.urls && data.urls.length > 0) { // Kiểm tra nếu có danh sách URL video
+                        data.urls.forEach((media) => {
+                            videoHtml += `
+                                <div style="margin-bottom: 20px;">
+                                    <button onclick="downloadVideo('${media.url}', '${data.resourceId}_${media.subName}.${media.extension}')">
+                                        📥 Tải về ${media.subName}
+                                    </button>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        videoHtml += "<p>Không tìm thấy video nào.</p>";
+                    }
+
+                    document.getElementById("Information").innerHTML = videoHtml;
                 } else {
-                    alert("Failed to fetch video info. Please try again.");
+                    alert("Không tìm thấy dữ liệu. Vui lòng kiểm tra lại link!");
                 }
             }).fail(function () {
-                alert("Error fetching data. Check API key or try again later.");
+                alert("Lỗi khi lấy dữ liệu. Kiểm tra API key hoặc thử lại sau.");
             });
+
         }
 
-        async function downloadVideo(videoUrl) {
-            try {
-                const response = await fetch(videoUrl);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'tiktok_video.mp4';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            } catch (error) {
-                alert("Error downloading video. Please try again.");
-            }
+        // Hàm tải video mà không chuyển trang
+        function downloadVideo(videoUrl, filename) {
+            fetch(videoUrl)
+                .then(response => response.blob()) // Chuyển dữ liệu thành file
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url); // Giải phóng bộ nhớ
+                })
+                .catch(error => {
+                    console.error("Lỗi tải video:", error);
+                    alert("Lỗi khi tải video. Vui lòng thử lại!");
+                });
         }
     </script>
 </body>
